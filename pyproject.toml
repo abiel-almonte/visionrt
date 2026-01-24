@@ -1,5 +1,11 @@
 [build-system]
-requires = ["setuptools>=68", "wheel", "torch", "pybind11", "numpy"]
+requires = [
+    "setuptools>=68",
+    "wheel",
+    "torch",
+    "pybind11",
+    "numpy",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +13,7 @@ name = "visionrt"
 version = "0.1.0"
 description = "Zero overhead real-time computer vision inference "
 readme = "README.md"
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.11"
 authors = [
     {name = "Abiel Almonte", email = "abielalmonte.eng@gmail.com"},
 ]

@@ -9,13 +9,15 @@ export CUDA_HOME=/usr/local/cuda
 export CUDACXX=/usr/local/cuda/bin/nvcc
 
 if [ -n "${VIRTUAL_ENV-}" ]; then
-  export LD_LIBRARY_PATH="$VIRTUAL_ENV/lib/python3.11/site-packages/torch/lib:${LD_LIBRARY_PATH-}"
+  PYTHON_VERSION=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+  export LD_LIBRARY_PATH="$VIRTUAL_ENV/lib/python${PYTHON_VERSION}/site-packages/torch/lib:${LD_LIBRARY_PATH-}"
 fi
 
 if [[ "${1-}" == "release" ]]; then
   echo "Building wheel for release..."
-  uv pip install build twine
-  uv run python -m build --wheel
+  uv sync
+  uv pip install build twine wheel pybind11 numpy
+  uv run python -m build --wheel --no-isolation
 else
   echo "Dev install (editable)..."
   uv sync
