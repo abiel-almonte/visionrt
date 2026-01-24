@@ -110,9 +110,8 @@ class Camera{
             long long dequeue_ns;
             long long copy_ns;
             long long queue_ns;
-            long long preprocess_ns;
 
-            Stats() : n_frames(0), dequeue_ns(0), copy_ns(0), queue_ns(0), preprocess_ns(0) {}
+            Stats() : n_frames(0), dequeue_ns(0), copy_ns(0), queue_ns(0) {}
         };
 
         Stats stats;

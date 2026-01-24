@@ -3,7 +3,6 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <cuda_runtime.h>
 
 #include <stdexcept>
 
@@ -16,16 +15,6 @@ struct CameraBuffer {
     size_t length() const {
         return v4l_buf.length;
     }
-};
-
-struct GPUBuffer{
-    void* data;
-    float* out;
-    size_t length;
-
-    GPUBuffer() : data(nullptr), length(0){}
-    GPUBuffer(size_t _length) : data(nullptr), length(_length){}
-
 };
 
 class CameraRingBuffer{
@@ -195,92 +184,6 @@ class CameraRingBuffer{
         }
 
         size_t buffer_length(const int i) const {
-            return buffers[i].length(); 
-        }
-};
-
-
-class GPURingBuffer{
-    private:
-        GPUBuffer* d_buffers;
-        size_t size;
-        
-        void alloc_buffer(int idx){
-            cudaError_t err0 = cudaMalloc(&d_buffers[idx].data, d_buffers[idx].length);
-            // output bytes = (length / 2) * 3 * sizeof(float) = length * 6.
-            size_t out_bytes = d_buffers[idx].length * 6;
-            cudaError_t err1 = cudaMalloc(&d_buffers[idx].out, out_bytes);
-
-            if (err0 != cudaSuccess || err1 != cudaSuccess){
-                cleanup(idx);
-                size = idx;
-                std::string error_msg = "Failed to alloc camera buffer to device: ";
-                if (err0 == cudaSuccess){
-                    error_msg += cudaGetErrorString(err0);
-                }else if (err1 == cudaSuccess){
-                    error_msg += cudaGetErrorString(err1);
-                }
-                throw std::runtime_error(error_msg);
-            }
-        }
-
-        void cleanup(int n){
-            for(int i=0; i < n; i++){
-                if (d_buffers[i].data){
-                    cudaFree(d_buffers[i].data);
-                    d_buffers[i].data = nullptr;
-                }
-
-                if (d_buffers[i].out){
-                    cudaFree(d_buffers[i].out);
-                    d_buffers[i].out = nullptr;
-                }
-            }
-        }
-        
-    public:
-
-        GPURingBuffer (size_t _size) : d_buffers(nullptr), size(_size){}
-        ~GPURingBuffer() {
-            if (d_buffers) {
-                cleanup(size);
-                delete[] d_buffers;
-                d_buffers = nullptr;
-            }
-        }
-
-        GPURingBuffer(const GPURingBuffer&) = delete;
-        GPURingBuffer& operator=(const GPURingBuffer& other) = delete;
-
-        GPURingBuffer(GPURingBuffer&&) = delete;
-        GPURingBuffer& operator=(GPURingBuffer&&) = delete;
-        
-        void init(CameraRingBuffer& h_ring){
-            d_buffers = new GPUBuffer[size];
-            for (int i = 0; i < size; i++){
-                d_buffers[i].length =  h_ring.buffer_length(i);
-                alloc_buffer(i);
-            }
-        }
-
-        void copy_buffer_to_gpu(int idx, void* start){
-            GPUBuffer& d_buffer = d_buffers[idx];
-
-            cudaError_t err = cudaMemcpy(
-                d_buffer.data,
-                start,
-                d_buffer.length,
-                cudaMemcpyHostToDevice
-            );
-
-            if (err != cudaSuccess){
-                std::string error_msg = "Failed to copy camera buffer to device: ";
-                error_msg += cudaGetErrorString(err);
-                throw std::runtime_error(error_msg);
-            }
-        }
-
-        GPUBuffer& operator[](int index) const {
-            return d_buffers[index];
+            return buffers[i].length();
         }
 };
