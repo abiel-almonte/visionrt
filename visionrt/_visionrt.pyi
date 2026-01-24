@@ -2,9 +2,10 @@
 C++/CUDA runtime providing a GPU-resident pipeline for camera capture, preprocessing, and PyTorch integration.
 """
 from __future__ import annotations
+import numpy
 import torch
 import typing
-__all__: list[str] = ['Camera', 'FrameGenerator', 'GraphExecutor', 'fused_add_relu_cuda', 'set_verbose']
+__all__: list[str] = ['Camera', 'FrameGenerator', 'GraphExecutor', 'fused_add_relu_cuda', 'launch_yuyv2rgb_chw_torch', 'set_verbose']
 class Camera:
     """
     Wrapper around a V4L2 camera device
@@ -21,10 +22,6 @@ class Camera:
         """
         Close the opened camera
         """
-    def get_stats(self) -> dict:
-        """
-        Get aggregated timing statistics for the camera pipeline as a Python dictionary.
-        """
     def print_formats(self) -> None:
         """
         Print all supported camera formats.
@@ -37,7 +34,7 @@ class Camera:
         """
         Reset internal timing statistics.
         """
-    def set_format(self, index: typing.SupportsInt) -> None:
+    def set_format(self, index: int) -> None:
         """
         Set the capture format.
         """
@@ -53,7 +50,7 @@ class FrameGenerator:
         """
         Return the iterator object itself.
         """
-    def __next__(self) -> torch.Tensor:
+    def __next__(self) -> numpy.ndarray[numpy.uint8]:
         """
         Advance to the next frame.
         
@@ -82,6 +79,10 @@ class GraphExecutor:
 def fused_add_relu_cuda(arg0: torch.Tensor, arg1: torch.Tensor) -> torch.Tensor:
     """
     Fused add + relu
+    """
+def launch_yuyv2rgb_chw_torch(yuyv_ptr: torch.Tensor, stride: int, length: int) -> torch.Tensor:
+    """
+    CUDA YUYV to RGB preprocessing kernel
     """
 def set_verbose(arg0: bool) -> None:
     """

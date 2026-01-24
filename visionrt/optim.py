@@ -11,7 +11,7 @@ from torch._inductor.lowering import make_fallback
 import triton
 import triton.language as tl
 
-from ._visionrt import fused_add_relu_cuda
+#from ._visionrt import fused_add_relu_cuda
 from . import config
 
 
@@ -170,9 +170,9 @@ def add_relu(conv_out: torch.Tensor, residual: torch.Tensor) -> torch.Tensor:
     return out
 
 
-@torch.library.custom_op("visionrt::add_relu_cuda", mutates_args=())
-def add_relu_cuda(conv_out: torch.Tensor, residual: torch.Tensor) -> torch.Tensor:
-    return fused_add_relu_cuda(conv_out, residual)
+#@torch.library.custom_op("visionrt::add_relu_cuda", mutates_args=())
+#def add_relu_cuda(conv_out: torch.Tensor, residual: torch.Tensor) -> torch.Tensor:
+#    return fused_add_relu_cuda(conv_out, residual)
 
 
 @add_relu.register_fake
@@ -180,13 +180,13 @@ def _(conv_out, residual):
     return F.relu(conv_out + residual)
 
 
-@add_relu_cuda.register_fake
-def _(conv_out, residual):
-    return torch.relu(conv_out + residual)
+#@add_relu_cuda.register_fake
+#def _(conv_out, residual):
+#    return torch.relu(conv_out + residual)
 
 
 make_fallback(torch.ops.visionrt.add_relu)
-make_fallback(torch.ops.visionrt.add_relu_cuda)
+#make_fallback(torch.ops.visionrt.add_relu_cuda)
 
 
 @register_transformation("fuse_add_relu")

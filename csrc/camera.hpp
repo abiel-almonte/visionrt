@@ -1,13 +1,15 @@
 #pragma once
 
 #include <fcntl.h>
-#include <chrono>
 #include <torch/torch.h>
+#include <linux/videodev2.h>
+#include <string>
+#include <sstream>
 #include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
 
 #include "buffers.hpp"
 #include "utils.hpp"
-#include "preprocessing.hpp"
 
 namespace py = pybind11;
 
@@ -102,7 +104,6 @@ class Camera{
         int fd;
         ssize_t fmt_idx;
         CameraFMTList list;
-        Preprocessor ppc;
     
         struct Stats{
             uint64_t n_frames;
@@ -118,12 +119,11 @@ class Camera{
 
     protected:
         CameraRingBuffer h_ring;
-        GPURingBuffer d_ring;
         bool is_streaming; 
 
 
     public: 
-        Camera (const char* filename) : fd(open_camera(filename)), h_ring(fd), d_ring(h_ring.get_n_buffers()), fmt_idx(-1), is_streaming(false){
+        Camera (const char* filename) : fd(open_camera(filename)), h_ring(fd), fmt_idx(-1), is_streaming(false){
             check_capabilities();
             fetch_formats();
             set_best_format();
@@ -294,6 +294,14 @@ class Camera{
             set_format(index);
         }
 
+        const uint get_height(){
+            return list[fmt_idx].height;
+        }
+
+        const uint get_width(){
+            return list[fmt_idx].width;
+        }
+
         void print_format() const {
             if (fmt_idx == -1) {
                 throw std::runtime_error("No format to be retrieved as camera format has not been set");
@@ -310,8 +318,21 @@ class Camera{
             }
 
             h_ring.start_streaming();
-            d_ring.init(h_ring);
             is_streaming = true;
+        }
+
+        py::array_t<uint8_t> get_frame(size_t idx){
+            void* data = h_ring.buffer_start(idx);
+            size_t size = h_ring.buffer_length(idx);
+
+            py::array_t<uint8_t> frame({
+                static_cast<ssize_t>(get_height()), 
+                static_cast<ssize_t>(get_width()), 
+                static_cast<ssize_t>(2)
+            });
+
+            memcpy(frame.mutable_data(), data, size);
+            return frame;
         }
 
         void stop_streaming(){
@@ -329,61 +350,6 @@ class Camera{
 
         Stats get_stats() const{
             return stats;
-        }
-
-        py::dict get_stats_pydict() const{
-            py::dict d;
-            const double inv_1e6 = 1.0 / 1.0e6;
-
-            auto mean_ms = [&](long long total_ns) -> double {
-                if (stats.n_frames == 0){
-                    return 0.0;
-                }
-                return (static_cast<double>(total_ns) * inv_1e6) / static_cast<double>(stats.n_frames);
-            };
-
-            d["n_frames"] = stats.n_frames;
-            d["dequeue_mean_ms"] = mean_ms(stats.dequeue_ns);
-            d["copy_mean_ms"] = mean_ms(stats.copy_ns);
-            d["queue_mean_ms"] = mean_ms(stats.queue_ns);
-            d["preprocess_mean_ms"] = mean_ms(stats.preprocess_ns);
-            return d;
-        }
-
-        void accumulate_stats(
-            const std::chrono::steady_clock::time_point& t0,
-            const std::chrono::steady_clock::time_point& t1,
-            const std::chrono::steady_clock::time_point& t2,
-            const std::chrono::steady_clock::time_point& t3
-        ){
-            auto dequeue_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
-            auto copy_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
-            auto queue_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t3 - t2).count();
-
-            stats.n_frames += 1;
-            stats.dequeue_ns += dequeue_ns;
-            stats.copy_ns += copy_ns;
-            stats.queue_ns += queue_ns;
-        }
-
-        void accumulate_preprocess(
-            const std::chrono::steady_clock::time_point& t0,
-            const std::chrono::steady_clock::time_point& t1
-        ){
-            auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
-            stats.preprocess_ns += ns;
-        }
-
-        torch::Tensor preprocess(int idx){
-            const CameraFMT& fmt = list[fmt_idx];
-            
-            auto t0 = std::chrono::steady_clock::now();
-            ppc.process(d_ring[idx], fmt.height, fmt.width);
-            auto t1 = std::chrono::steady_clock::now();
-            accumulate_preprocess(t0, t1);
-
-            torch::TensorOptions opts = torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCUDA).requires_grad(false);
-            return torch::from_blob(d_ring[idx].out, {3, (long)fmt.height, (long)fmt.width}, opts);
         }
 
         std::string __repr__(){
@@ -407,28 +373,19 @@ class FrameGenerator {
             return this;
         }
 
-        torch::Tensor __next__(){
+        py::array_t<uint8_t> __next__(){
             if(!cam->is_streaming){
                 cam->start_streaming();
             }
 
-            auto t0 = std::chrono::steady_clock::now();
             int idx = cam->h_ring.dequeue_buffer();
-            auto t1 = std::chrono::steady_clock::now();
-
             if (idx == -1){
                 throw py::stop_iteration();
             }
 
-            auto t2_start = std::chrono::steady_clock::now();
-            cam->d_ring.copy_buffer_to_gpu(idx, cam->h_ring.buffer_start(idx));
-            auto t2 = std::chrono::steady_clock::now();
-
+            auto frame = cam->get_frame(idx);
             cam->h_ring.queue_buffer(idx);
-            auto t3 = std::chrono::steady_clock::now();
 
-            cam->accumulate_stats(t0, t1, t2, t3);
-            
-            return cam->preprocess(idx);
+            return frame;
         }
 };

@@ -4,6 +4,7 @@
 #include "camera.hpp"
 #include "graph.hpp"
 #include "ops.hpp"
+#include "preprocessing.hpp"
 #include "utils.hpp"
 
 namespace py = pybind11;
@@ -27,7 +28,6 @@ PYBIND11_MODULE(_visionrt, m) {
 
         .def("close", &Camera::close_camera, "Close the opened camera")
         .def("reset_stats", &Camera::reset_stats, "Reset internal timing statistics.")
-        .def("get_stats", &Camera::get_stats_pydict, "Get aggregated timing statistics for the camera pipeline as a Python dictionary.")
         .def("print_formats", &Camera::list_formats, "Print all supported camera formats.")
         .def("set_format", &Camera::set_format, py::arg("index"), "Set the capture format.")
         .def("print_selected_format", &Camera::print_format, "Print the currently selected camera format.")
