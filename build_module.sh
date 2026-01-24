@@ -19,6 +19,6 @@ if [[ "${1-}" == "release" ]]; then
 else
   echo "Dev install (editable)..."
   uv sync
-  uv pip install -e .
+  uv pip install -e . --no-build-isolation
   PYTHONPATH=. uv run pybind11-stubgen visionrt._visionrt -o .
 fi
