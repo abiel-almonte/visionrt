@@ -86,7 +86,7 @@ class Preprocessor:
         num_pairs = (h * w) // 2
         stride = h * w
 
-        yuyv = torch.from_numpy(frame.ravel().view(numpy.uint32)).cuda()
+        yuyv = torch.from_numpy(frame.ravel().view(numpy.uint32)).cuda(non_blocking=True)
         out = torch.empty(3 * stride, dtype=torch.float32, device="cuda")
 
         grid = ((num_pairs + BLOCK_SIZE - 1) // BLOCK_SIZE,)
