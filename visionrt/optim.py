@@ -11,7 +11,7 @@ from torch._inductor.lowering import make_fallback
 import triton
 import triton.language as tl
 
-#from ._visionrt import fused_add_relu_cuda
+# from ._visionrt import fused_add_relu_cuda
 from . import config
 
 
@@ -67,7 +67,9 @@ def fold_conv_bn(gm: fx.GraphModule, ph_dict: Dict[str, Placeholder], node: fx.N
 
         if bn_input.op == "call_function" and bn_input.target == F.conv2d:
             conv_node = bn_input
-            _, convW_node, convBias_node, *_ = conv_node.args # assuming bias is disabled for resnet 
+            _, convW_node, convBias_node, *_ = (
+                conv_node.args
+            )  # assuming bias is disabled for resnet
 
             if not isinstance(convW_node, fx.Node):
                 return
@@ -170,8 +172,8 @@ def add_relu(conv_out: torch.Tensor, residual: torch.Tensor) -> torch.Tensor:
     return out
 
 
-#@torch.library.custom_op("visionrt::add_relu_cuda", mutates_args=())
-#def add_relu_cuda(conv_out: torch.Tensor, residual: torch.Tensor) -> torch.Tensor:
+# @torch.library.custom_op("visionrt::add_relu_cuda", mutates_args=())
+# def add_relu_cuda(conv_out: torch.Tensor, residual: torch.Tensor) -> torch.Tensor:
 #    return fused_add_relu_cuda(conv_out, residual)
 
 
@@ -180,13 +182,13 @@ def _(conv_out, residual):
     return F.relu(conv_out + residual)
 
 
-#@add_relu_cuda.register_fake
-#def _(conv_out, residual):
+# @add_relu_cuda.register_fake
+# def _(conv_out, residual):
 #    return torch.relu(conv_out + residual)
 
 
 make_fallback(torch.ops.visionrt.add_relu)
-#make_fallback(torch.ops.visionrt.add_relu_cuda)
+# make_fallback(torch.ops.visionrt.add_relu_cuda)
 
 
 @register_transformation("fuse_add_relu")

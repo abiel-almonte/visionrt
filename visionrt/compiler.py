@@ -22,10 +22,8 @@ from .utils import inference, logging
 from .optim import (
     Placeholder,
     Transformation,
-
     optimize_fx,
     inspect_fx,
-
     transformation_registry,
 )
 from . import config
@@ -195,16 +193,22 @@ if __name__ == "__main__":
 
         baseline_time, baseline_out = inference(model, input)
         if GENERATE_BASELINE_CODE:
-            torch_compiled_time, torch_compiled_out = inference(torch_compiled_model, input)  # type:ignore
+            torch_compiled_time, torch_compiled_out = inference(
+                torch_compiled_model, input
+            )  # type:ignore
         vrt_compiled_time, vrt_compiled_out = inference(vrt_compiled_model, input)
 
         print(f"Baseline CUDA Time (ms): {baseline_time}")
         if GENERATE_BASELINE_CODE:
-            print(f"Torch Compiled CUDA Time (ms): {torch_compiled_time}")  # type:ignore
+            print(
+                f"Torch Compiled CUDA Time (ms): {torch_compiled_time}"
+            )  # type:ignore
         print(f"VRT Compiled CUDA Time (ms): {vrt_compiled_time}")
 
         print()
 
         if GENERATE_BASELINE_CODE:
-            print(f"Torch Max diff: {(baseline_out - torch_compiled_out.clone()).abs().max()}")  # type:ignore
+            print(
+                f"Torch Max diff: {(baseline_out - torch_compiled_out.clone()).abs().max()}"
+            )  # type:ignore
         print(f"VRT Max diff: {(baseline_out - vrt_compiled_out).abs().max()}")

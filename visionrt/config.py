@@ -7,7 +7,7 @@ from ._visionrt import set_verbose
 use_custom: bool = True  # use custom optimize_fx to modify the fx graph before inductor
 use_inductor: bool = True  # use the inductor backend in `torch.compile`
 debug: bool = False  # print fx graph to terminal
-verbose: bool = False # print the visionrt logs to the terminal
+verbose: bool = False  # print the visionrt logs to the terminal
 cudagraphs: bool = False  # capture cudagraph in visionrt backend
 
 

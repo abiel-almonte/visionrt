@@ -4,7 +4,8 @@ import torch
 
 from . import config
 
-class logging: # low effort logging class
+
+class logging:  # low effort logging class
     info: Callable = lambda x: (
         print(f"[visionrt] INFO: {x}") if config.verbose else None
     )
@@ -16,7 +17,7 @@ class logging: # low effort logging class
     )
 
 
-def inference(model, ins, iters=500): # get device times
+def inference(model, ins, iters=500):  # get device times
 
     for _ in range(20):
         out = model(ins)
