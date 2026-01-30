@@ -21,7 +21,7 @@ model = (
 )
 labels = ResNet50_Weights.IMAGENET1K_V2.meta["categories"]
 
-camera = Camera("/dev/video0")
+camera = Camera("/dev/video0", deterministic=True)
 preprocessor = Preprocessor()
 
 optimized_model = visionrt.compile(model)
