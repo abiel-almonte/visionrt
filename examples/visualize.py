@@ -198,7 +198,7 @@ def main(iters: int = 100) -> None:
     plt.tight_layout()
     sns.despine()
 
-    fig.savefig("images/latency_density.png", dpi=300, bbox_inches="tight")
+    fig.savefig("images/latency_histogram.png", dpi=300, bbox_inches="tight")
 
 
 if __name__ == "__main__":
