@@ -5,11 +5,12 @@ Skip the overhead:
 from visionrt import Camera, Preprocessor
 import visionrt
 
-camera = Camera("/dev/video0")
+camera = Camera("/dev/video0", deterministic=True)
+preprocess = Preprocessor()
 model = visionrt.compile(model)
 
 for frame in camera.stream():
-    tensor = Preprocessor(frame)
+    tensor = preprocess(frame)
     out = model(tensor)
 ```
 
@@ -17,7 +18,7 @@ So fast you can see your camera's true refresh rate:
 
 ![kde](images/latency_histogram.png)
 
-The orange narrow peaks show `visionrt` is so deterministic that you can actually see the hardware. The bimodal distribution is the webcam itself, not software jitter.
+The orange narrow peaks show `visionrt` is so fast and deterministic that you can actually see the hardware, nearly 100% of inference runs complete at the webcam's refresh rate.
 
 ---
 
