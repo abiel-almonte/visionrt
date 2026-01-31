@@ -2,15 +2,13 @@
 
 Skip the overhead:
 ```python
-from visionrt import Camera, Preprocessor
+from visionrt import Camera
 import visionrt
 
 camera = Camera("/dev/video0", deterministic=True)
-preprocess = Preprocessor()
 model = visionrt.compile(model)
 
 for frame in camera.stream():
-    tensor = preprocess(frame)
     out = model(tensor)
 ```
 
