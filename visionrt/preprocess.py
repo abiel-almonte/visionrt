@@ -1,10 +1,30 @@
+from typing import List
+
 import torch
+import torch.nn as nn
+from torch._inductor.lowering import make_fallback
 
 import triton
 import triton.language as tl
 
 from ._visionrt import yuyv2rgb_cuda
 
+
+@torch.library.custom_op("visionrt::yuyv2rgb_cuda", mutates_args=())
+def _yuyv2rgb_cuda_op(
+    yuyv: torch.Tensor, height: int, width: int, scale: List[float], offset: List[float]
+) -> torch.Tensor:
+    return yuyv2rgb_cuda(yuyv, height, width, scale, offset)
+
+
+@_yuyv2rgb_cuda_op.register_fake
+def _(
+    yuyv: torch.Tensor, height: int, width: int, scale: List[float], offset: List[float]
+):
+    return torch.empty(3 * height * width, device="cuda", dtype=torch.float32)
+
+
+make_fallback(torch.ops.visionrt.yuyv2rgb_cuda)
 
 Y_OFFSET = tl.constexpr(16)
 UV_OFFSET = tl.constexpr(128)
@@ -72,13 +92,14 @@ def _yuyv2rgb_kernel(
 BLOCK_SIZE = tl.constexpr(256)
 
 
-class Preprocessor:
+class Preprocessor(nn.Module):
     def __init__(
         self,
         use_triton: bool = False,
         mean: list = [0.485, 0.456, 0.406],
         std: list = [0.229, 0.224, 0.225],
     ) -> None:
+        super().__init__()
         assert len(mean) == 3 and len(std) == 3
         self._scale = tuple(1 / (255 * std[i]) for i in range(3))
         self._offset = tuple(-mean[i] / std[i] for i in range(3))
@@ -110,7 +131,7 @@ class Preprocessor:
 
     def _call_cuda(self, frame: torch.Tensor) -> torch.Tensor:
         h, w = frame.shape[:2]
-        out = yuyv2rgb_cuda(
+        out = _yuyv2rgb_cuda_op(
             frame,
             h,
             w,
@@ -122,5 +143,5 @@ class Preprocessor:
 
     def _call(self, frame: torch.Tensor) -> torch.Tensor: ...
 
-    def __call__(self, frame: torch.Tensor) -> torch.Tensor:
+    def forward(self, frame: torch.Tensor) -> torch.Tensor:
         return self._call(frame)
