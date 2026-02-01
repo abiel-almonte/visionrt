@@ -69,13 +69,13 @@ __global__ void yuyv2rgb_chw_kernel(
 }
 
 torch::Tensor launch_yuyv2rgb_chw(
-    const torch::Tensor& yuyv,  // [num_pairs] as uint32
+    const torch::Tensor& yuyv,  // [H, W, 2] as uint8
     int height,
     int width,
     const std::vector<float>& scale,
     const std::vector<float>& offset
 ) {
-    const int num_pairs = yuyv.numel();
+    const int num_pairs = (height * width) / 2;  // Number of YUYV pairs
     const int stride = height * width;
 
     auto out = torch::empty({3 * stride}, torch::TensorOptions().dtype(torch::kFloat32).device(yuyv.device()));

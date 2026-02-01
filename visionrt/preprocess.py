@@ -104,7 +104,7 @@ class Preprocessor(nn.Module):
         self._scale = tuple(1 / (255 * std[i]) for i in range(3))
         self._offset = tuple(-mean[i] / std[i] for i in range(3))
         self._scale_list = list(self._scale)
-        self._offset_list = list(self._scale)
+        self._offset_list = list(self._offset)
 
         self._call = self._call_triton if use_triton else self._call_cuda
 
