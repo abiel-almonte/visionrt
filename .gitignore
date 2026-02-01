@@ -8,5 +8,7 @@ dist/
 *.pyd
 __pycache__/
 
+demo*
+
 old/
 reports/
