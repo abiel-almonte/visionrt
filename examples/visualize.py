@@ -162,9 +162,9 @@ def main(iters: int = 100) -> None:
         f"µ = {baseline_mean:.1f}ms\nσ = {baseline_std:.1f}ms",
         ha="left",
         va="top",
-        fontsize=10,
+        fontsize=12,
         fontweight="bold",
-        color=BASELINE_COLOR,
+        color="black",
     )
     ax.text(
         visionrt_mean + 1.5,
@@ -172,16 +172,16 @@ def main(iters: int = 100) -> None:
         f"µ = {visionrt_mean:.1f}ms\nσ = {visionrt_std:.1f}ms",
         ha="left",
         va="top",
-        fontsize=10,
+        fontsize=12,
         fontweight="bold",
-        color=VISIONRT_COLOR,
+        color="black",
     )
 
-    ax.set_xlabel("Per-frame Latency (ms)", fontsize=12, fontweight="bold")
-    ax.set_ylabel("Percent", fontsize=12, fontweight="bold")
+    ax.set_xlabel("Per-frame Latency (ms)", fontsize=14, fontweight="bold")
+    ax.set_ylabel("Percent", fontsize=14, fontweight="bold")
     ax.set_title(
         "Latency Distribution",
-        fontsize=14,
+        fontsize=18,
         fontweight="bold",
         pad=15,
     )
@@ -205,10 +205,13 @@ def main(iters: int = 100) -> None:
 
     ax.grid(axis="y", alpha=0.3, linestyle="-", color="lightgray")
     ax.set_axisbelow(True)
-    ax.tick_params(axis="both", labelsize=11)
+    ax.tick_params(axis="both", labelsize=12)
+
+    for spine in ax.spines.values():
+        spine.set_visible(True)
+        spine.set_linewidth(1.0)
 
     plt.tight_layout()
-    sns.despine(left=True)
 
     fig.savefig("images/latency_histogram.png", dpi=300, bbox_inches="tight")
 
